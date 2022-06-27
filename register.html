@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bond Calculator</title>
+    <link rel="stylesheet" href="main.css" />
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script type="module" src="firebase_get.js"></script>
+
+</head>
+
+<body>
+
+    <div id="app">
+        <div id="option-buttons"></div>
+        <div id="login-screen" class="middle"></div>
+        <h1 id="username-header"></h1>
+        <div id="bond-screen"></div>
+        <div id="add-bond-screen"></div>
+    </div>
+
+    <script>
+        function openLoginScreen() {
+            cleanDivs();
+            document.getElementById("login-screen").innerHTML = '<p>Username: </p> <input id="username-input" type="text"><p>Password: </p> <input id="password-input" type="password"><br><br><button id="button-login" onclick="loginFunction()">Login</button><button id="button-register" onclick="registerFunction()">register</button><p class="invisible" id="data"></p><p class="error-text" id="error-message"></p>';
+        }
+        function openBondScreen() {
+            cleanDivs();
+            document.getElementById("option-buttons").innerHTML = '<button class="set-right" onclick="openLoginScreen()">Logout</button><br><br><button class="set-right" onclick="openAddBondScreen()">Add Bond</button>'
+            //aca va lo que genera el html que muestra los bonos del usuario
+            console.log("opening bond screen");
+            document.getElementById("username-header").innerText = document.current_username + ' - Bonds'
+            //document.getElementById("bond-screen").innerHTML = '' //pones dentro el html aqui
+            for (let i = 0; i < document.variableGlobal_bonds.length; i++) {
+                if (document.variableGlobal_bonds[i].usernameAsociado == document.current_username) {
+                    drawBond(document.variableGlobal_bonds[i]);
+                }
+            }
+
+        }
+        function openAddBondScreen() {
+            cleanDivs();
+            document.getElementById("option-buttons").innerHTML = '<button class="set-right" onclick="openLoginScreen()">Logout</button><br><br><button class="set-right" onclick="openBondScreen()">See Bonds</button>'
+            //aca va lo que genera el html que muestra la pantalla para ingresar nuevos bonos para un usuario
+            console.log("opening add bond screen");
+            document.getElementById("username-header").innerText = document.current_username + ' - Add Bond';
+            let x = '<p class="field" id="name">Nombre del Bono:</p>' +
+                '<input type="text" id="input-name">' +
+                '<p class="field" id="nominal-value">Valor Nominal:</p>' +
+                '<input type="text" id="input-nominal-value">' +
+                '<p class="field" id="number-of-bonds">Número de Bonos emitidos:</p>' +
+                '<input type="text" id="input-number-of-bonds">' +
+                '<p class="field" id="comercial-value">Valor Comercial:</p>' +
+                '<input type="text" id="input-comercial-value">' +
+                '<p class="field" id="time">Tiempo:</p>' +
+                '<input type="text" id="input-time">' +
+                '<p class="field" id="liquidation">Liquidación:</p>' +
+                '<input type="text" id="input-liquidation">' +
+                '<p class="field" id="tea">TEA:</p>' +
+                '<input type="text" id="input-tea">' +
+                '<p class="field" id="renta">Impuesto a la Renta:</p>' +
+                '<input type="text" id="input-renta">' +
+                '<p class="field" id="vencimiento">Vencimiento:</p>' +
+                '<input type="text" id="input-vencimiento">' +
+                '<p class="field" id="estructuracion">Estructuración:</p>' +
+                '<input type="text" id="input-estructuracion">' +
+                '<p class="field" id="colocacion">Colocación:</p>' +
+                '<input type="text" id="input-colocacion">' +
+                '<p class="field" id="flotacion">Flotación:</p>' +
+                '<input type="text" id="input-flotacion">' +
+                '<p class="field" id="cavali">CAVALI:</p>' +
+                '<input type="text" id="input-cavali">';
+
+            document.getElementById("add-bond-screen").innerHTML = x + "<button onclick=addBond()>create</button>";
+
+        }
+        function cleanDivs() {
+            let x = '<div id="option-buttons"></div>' +
+                '<div id="login-screen" class="middle"></div>' +
+                '<h1 id="username-header"></h1>' +
+                '<div id="bond-screen"></div>' +
+                '<div id="add-bond-screen"></div>';
+            document.getElementById("app").innerHTML = x;
+        }
+
+        function drawBond(bono) {
+            let bondHTML = '<div class="bond-div">' +
+                '<h2 class="bond-title">Resumen de Bono</h2>' +
+                '<p class="field" id="name-bond-user">Nombre del Bono:</p>' +
+                '<p class="field" id="nominal-value-bond-user">Valor Nominal:</p>' +
+                '<p class="field" id="number-of-bonds-bond-user">Número de Bonos emitidos:</p>' +
+                '<p class="field" id="comercial-value-bond-user">Valor Comercial:</p>' +
+                '<p class="field" id="time-bond-user">Tiempo:</p>' +
+                '<p class="field" id="liquidation-bond-user">Liquidación:</p>' +
+                '<p class="field" id="tea-bond-user">TEA:</p>' +
+                '<p class="field" id="renta-bond-user">Impuesto a la Renta:</p>' +
+                '<p class="field" id="vencimiento-bond-user">Vencimiento:</p>' +
+                '<p class="field" id="estructuracion-bond-user">Estructuración:</p>' +
+                '<p class="field" id="colocacion-bond-user">Colocación:</p>' +
+                '<p class="field" id="flotacion-bond-user">Flotación:</p>' +
+                '<p class="field" id="cavali-bond-user">CAVALI:</p>' +
+                '<p class="calculated-field" id="van-bond-user">VAN:</p>' +
+                '<p class="calculated-field" id="tir-bond-user">TIR:</p>' +
+                '</div>';
+            bondHTML = bondHTML.replace("Nombre del Bono:", "Nombre del Bono: " + bono.nombre);
+            bondHTML = bondHTML.replace("Valor Nominal:", "Valor Nominal: " + bono.valorNominal);
+            bondHTML = bondHTML.replace("Valor Comercial:", "Valor Comercial: " + bono.valorComercial);
+            bondHTML = bondHTML.replace("Tiempo:", "Tiempo: " + bono.tiempo);
+            bondHTML = bondHTML.replace("Liquidación:", "Liquidación: " + bono.diasEntreLiquidaciones);
+            bondHTML = bondHTML.replace("TEA:", "TEA: " + bono.tea);
+            bondHTML = bondHTML.replace("Impuesto a la Renta:", "Impuesto a la Renta: " + bono.tasaImpuestoRenta);
+            bondHTML = bondHTML.replace("Vencimiento:", "Vencimiento: " + bono.primaVencimiento);
+            bondHTML = bondHTML.replace("Estructuración:", "Estructuración: " + bono.estructuracion);
+            bondHTML = bondHTML.replace("Colocación:", "Colocación: " + bono.colocacion);
+            bondHTML = bondHTML.replace("Flotación:", "Flotación: " + bono.flotacion);
+            bondHTML = bondHTML.replace("CAVALI:", "CAVALI: " + bono.cavali);
+            bondHTML = bondHTML.replace("Número de Bonos emitidos:", "Número de Bonos emitidos: " + bono.numeroBonos);
+            bondHTML = bondHTML.replace("VAN:", "VAN: "+calculateVAN(bono, 0.05));
+            bondHTML = bondHTML.replace("TIR:", "TIR: "+calculateTIR(bono));
+            while (true) {
+                if (bondHTML == bondHTML.replace("bond-user", bono.nombre)) {
+                    break;
+                }
+                bondHTML = bondHTML.replace("bond-user", bono.nombre)
+            }
+            document.getElementById("bond-screen").innerHTML += bondHTML;
+        }
+        function addBond() {
+            let bono = {}
+            bono.cavali = +(document.getElementById('input-cavali').value) + 0.0
+            bono.colocacion = +(document.getElementById('input-colocacion').value) + 0.0
+            bono.diasEntreLiquidaciones = +(document.getElementById('input-liquidation').value) + 0.0
+            bono.estructuracion = +(document.getElementById('input-estructuracion').value) + 0.0
+            bono.flotacion = +(document.getElementById('input-flotacion').value) + 0.0
+            bono.nombre = document.getElementById('input-name').value
+            bono.numeroBonos = +(document.getElementById('input-number-of-bonds').value) + 0.0
+            bono.primaVencimiento = +(document.getElementById('input-vencimiento').value) + 0.0
+            bono.tasaImpuestoRenta = +(document.getElementById('input-renta').value) + 0.0
+            bono.tea = +(document.getElementById('input-tea').value) + 0.0
+            bono.tiempo = +(document.getElementById('input-time').value) + 0.0
+            bono.valorComercial = +(document.getElementById('input-comercial-value').value) + 0.0
+            bono.valorNominal = +(document.getElementById('input-nominal-value').value) + 0.0
+
+            bono.usernameAsociado = document.current_username;
+            console.log(bono);
+            postBond(bono);
+        }
+        function calculateVAN(bond, cok) {
+            let TEP = (1 + bond.tea);
+            TEP = Math.pow(TEP, bond.diasEntreLiquidaciones/360);
+            TEP = TEP - 1;
+            let cupon = bond.valorNominal*TEP;
+            let VAN = -bond.valorComercial - (bond.flotacion + bond.cavali)*bond.valorComercial;
+            for(let i = 1; i <= bond.tiempo/bond.diasEntreLiquidaciones; i++){
+                VAN += cupon/(1+cok)^i;
+            }
+            VAN += (bond.valorNominal + bond.primaVencimiento*bond.valorNominal)/(1+cok)^(bond.tiempo/bond.diasEntreLiquidaciones);
+            return VAN
+        }
+        function calculateTIR(bond) {
+            let VAN = 1000000;
+            let TIR = 0;
+            while(true) {
+                VAN = calculateVAN(bond, TIR);
+                if(VAN > 0) {
+                    TIR += 0.01;
+                }
+                else {
+                    break;
+                }
+            }
+            return TIR;
+        }
+        function postBond(bond) {
+            //aqui va el código que postea el bono generado al servidor
+            document.variableGlobal_db.collection("bonds").doc().set(bond)
+            .then(() => {
+                console.log("Document successfully written!");
+                location.reload();
+            })
+        }
+
+        function loginFunction() {
+            username = document.getElementById("username-input").value;
+            password = document.getElementById("password-input").value;
+            //document.variableGlobal_bonds
+            //document.variableGlobal_users
+            for (let i = 0; i < document.variableGlobal_users.length; i++) {
+                if (document.variableGlobal_users[i].username == username
+                    && document.variableGlobal_users[i].password == password) {
+                    document.current_username = username;
+                    openBondScreen();
+                    return;
+                }
+            }
+            document.getElementById("error-message").innerText = "invalid username or password";
+        }
+        function registerFunction() {
+            username = document.getElementById("username-input").value;
+            password = document.getElementById("password-input").value;
+            //document.variableGlobal_bonds
+            //document.variableGlobal_users
+            for (let i = 0; i < document.variableGlobal_users.length; i++) {
+                if (document.variableGlobal_users[i].username == username) {
+                    document.getElementById("error-message").innerText = "that user already exist";
+                    return;
+                }
+            }
+            document.getElementById("error-message").innerText = "user registered correctly";
+            //código que crea la entrada en firebase.
+            document.variableGlobal_db.collection("users").doc().set({
+                username: username,
+                password: password
+            })
+            .then(() => {
+                console.log("Document successfully written!");
+                window.location.href = "index.html";
+            })
+        }
+
+        openLoginScreen();
+    </script>
+</body>
+
+</html>
